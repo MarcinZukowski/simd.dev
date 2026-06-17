@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SIMD Tooltips — options</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main>
+  <h1>SIMD Tooltips</h1>
+
+  <label class="row">
+    <input type="checkbox" id="enabled">
+    <span>Enabled</span>
+  </label>
+
+  <label class="row">
+    <input type="checkbox" id="includeTypes">
+    <span>Show tooltips on SIMD types too (e.g. <code>__m256i</code>, <code>svfloat32_t</code>)</span>
+  </label>
+
+  <label class="block">
+    <span>Excluded URLs (one regex per line — page is skipped when any pattern matches the URL)</span>
+    <textarea id="excludePatterns" spellcheck="false" rows="6" placeholder="^https?://example\.com/&#10;/admin/"></textarea>
+  </label>
+  <p id="regex-errors" class="errors" hidden></p>
+
+  <div class="row">
+    <button id="save">Save</button>
+    <span id="status" class="status"></span>
+  </div>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

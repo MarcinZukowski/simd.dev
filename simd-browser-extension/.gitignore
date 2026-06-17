@@ -1,0 +1,9 @@
+# Vendored copies of simd-tooltip/dist/ artifacts — repopulate with ./sync.sh.
+lib/simd-tooltips.js
+lib/simd-names.json
+lib/simd-data.json
+
+# Packaged extension archives
+*.zip
+*.xpi
+*.crx

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "SIMD Tooltips",
+  "short_name": "SIMD Tooltips",
+  "version": "0.1.0",
+  "description": "Hover tooltips for SIMD intrinsics and types on any page.",
+  "permissions": ["storage"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/simd-tooltips.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/simd-names.json", "lib/simd-data.json"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "simd-tooltips@simd.dev",
+      "strict_min_version": "115.0"
+    }
+  }
+}
