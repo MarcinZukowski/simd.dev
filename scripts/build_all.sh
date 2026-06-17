@@ -59,14 +59,26 @@ echo ">> [2/6] fetching LLVM clang x86 headers ..."
 echo ">> [3/6] extracting Doxygen descriptions from LLVM headers ..."
 "$PY" scripts/extract_llvm_descs.py
 
-echo ">> [4/6] building unified DB ..."
+echo ">> [4/7] building unified DB ..."
 "$PY" scripts/build_db.py
 
-echo ">> [5/6] building web artifacts (simd-tooltip/dist/) ..."
+echo ">> [5/7] building web artifacts (simd-tooltip/dist/) ..."
 "$PY" scripts/build_web.py
 
-echo ">> [6/6] building ARM per-microarch perf table via llvm-mca ..."
+echo ">> [6/7] building ARM per-microarch perf table via llvm-mca ..."
 "$PY" scripts/build_arm_perf.py
 
+echo ">> [7/7] syncing dist artifacts into downstream consumers ..."
+# Each consumer keeps its own gitignored vendored copy (vsce / static
+# hosts / browser extensions can't reliably resolve git symlinks across
+# platforms). Re-running the syncs here keeps the four locations from
+# drifting -- which is what bit us with simd-vscode going a month stale.
+for sync in simd.dev/sync.sh simd-vscode/sync.sh simd-browser-extension/sync.sh; do
+    if [[ -x "$sync" ]]; then
+        echo ">>   $sync"
+        "$sync"
+    fi
+done
+
 echo
-echo ">> done. outputs in data/ and simd-tooltip/dist/."
+echo ">> done. outputs in data/ and simd-tooltip/dist/ (synced into simd.dev/, simd-vscode/, simd-browser-extension/)."
