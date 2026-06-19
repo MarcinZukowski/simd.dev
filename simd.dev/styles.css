@@ -565,6 +565,25 @@ button.tag-filter:hover, button.tag-filter:focus-visible {
 }
 .ex-norun strong { color: var(--fg); font-weight: 600; }
 
+.ex-verify {
+    margin-top: 8px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: var(--muted);
+}
+.ex-verify:empty { display: none; }
+.ex-verify code { font-size: 0.95em; }
+.ex-verify-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-right: 6px;
+}
+.ex-verify-tag.ok   { background: #e5f4ec; color: #2c8a55; }
+.ex-verify-tag.fail { background: #fbebeb; color: #b34a4a; }
+.ex-verify-meta { color: var(--muted); }
+
 .arm-perf { font-size: 0.9em; }
 .arm-perf-loading, .arm-perf-empty {
     color: var(--muted);

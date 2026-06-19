@@ -20,6 +20,15 @@ for f in simd-tooltips.js simd-names.json simd-data.json arm-perf.json; do
     fi
 done
 
+# CE-verify status (produced by scripts/verify_ce.mjs). Optional --
+# the site handles a missing file gracefully and the verifier runs
+# out-of-band (slow, ~hours).
+CE_VERIFY="$HERE/../data/ce_verify.jsonl"
+if [[ -f "$CE_VERIFY" ]]; then
+    cp "$CE_VERIFY" "$DEST/ce_verify.jsonl"
+    printf '  %12d B  %s\n' "$(wc -c < "$DEST/ce_verify.jsonl" | tr -d ' ')" "$DEST/ce_verify.jsonl"
+fi
+
 # simd-annotate's example files. The "original" + "annotated" pair are
 # linked from the simd-annotate about-card on the landing page.
 ANNO_SRC="$HERE/../simd-annotate/examples"

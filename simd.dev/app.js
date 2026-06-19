@@ -718,6 +718,7 @@
         // (live from Intel's perf2.js).
         hydrateArmPerf($card).catch(() => {});
         hydrateIntelPerf($card).catch(() => {});
+        hydrateCeVerify($card).catch(() => {});
     }
 
     function exitIntrinsicPage(opts = {}) {
@@ -1520,6 +1521,63 @@
         }
     }
 
+    // CE-verify status, lazy-loaded from dist/ce_verify.jsonl. The intrinsic
+    // page renders an empty `.ex-verify` placeholder; after mount we fetch
+    // (once), build a name→row map, and inject a small badge. A 404 means
+    // the verifier hasn't run yet -- treat as "no data, show nothing".
+    let _ceVerifyPromise = null;
+    function loadCeVerify() {
+        if (_ceVerifyPromise) return _ceVerifyPromise;
+        _ceVerifyPromise = fetch('dist/ce_verify.jsonl', { credentials: 'omit' })
+            .then(r => r.ok ? r.text() : '')
+            .then(text => {
+                const map = new Map();
+                for (const line of (text || '').split('\n')) {
+                    if (!line.trim()) continue;
+                    try {
+                        const row = JSON.parse(line);
+                        if (row && row.name) map.set(row.name, row);
+                    } catch (_) { /* skip */ }
+                }
+                return map;
+            })
+            .catch(() => new Map());
+        return _ceVerifyPromise;
+    }
+
+    function renderCeVerifyBadge(row) {
+        if (!row) return '';
+        const s = row.status;
+        const compiler = row.compiler || 'Compiler Explorer';
+        if (s === 'ok') {
+            const note = row.notes === 'compile_only' ? ' (compile-only)' : '';
+            return `<span class="ex-verify-tag ok">✓ verified on Compiler Explorer</span>`
+                + ` <span class="ex-verify-meta">${escapeHtml(compiler)}${note}</span>`;
+        }
+        if (s && s.startsWith('skipped')) return '';
+        const label = ({
+            compile_failed:    'harness does not compile on CE',
+            run_failed:        'harness compiled but failed to run on CE',
+            output_mismatch:   'CE output disagrees with cached bytes',
+            output_unparseable:'CE output was not parseable as hex',
+            no_result_bytes:   'CE compiled but RESULT was not constant-folded',
+            network_error:     'CE could not be reached',
+        })[s] || ('verifier status: ' + s);
+        const err = row.error_excerpt ? `: <code>${escapeHtml(row.error_excerpt)}</code>` : '';
+        return `<span class="ex-verify-tag fail">⚠ ${escapeHtml(label)}</span>${err}`;
+    }
+
+    async function hydrateCeVerify(root) {
+        const slots = root.querySelectorAll('.ex-verify[data-name]');
+        if (!slots.length) return;
+        const map = await loadCeVerify();
+        for (const slot of slots) {
+            const row = map.get(slot.dataset.name);
+            const html = renderCeVerifyBadge(row);
+            if (html) slot.innerHTML = html;
+        }
+    }
+
     // Intel per-microarch perf, lazy-loaded straight from Intel's CDN.
     // The file assigns a `perf2_js` global, keyed by XED operand-form.
     // We don't re-host it -- the <script> tag pulls fresh data each
@@ -1798,6 +1856,12 @@
             ? `<div class="ex-norun"><strong>No live update:</strong> `
                 + `${escapeHtml(_renderExampleNoRunReason)}</div>`
             : '';
+        // CE-verify badge: populated by hydrateCeVerify() from
+        // dist/ce_verify.jsonl after the page mounts. Empty until then
+        // (or forever, if no row exists for this intrinsic).
+        const ceVerify = _renderExampleViewable
+            ? `<div class="ex-verify" data-name="${escapeAttr(name)}"></div>`
+            : '';
         const hint = _renderExampleViewable
             ? (_renderExampleRunnable
                 ? `<div class="ex-hint"><em>input values are editable</em> — change a number and click <strong>↻ update (via CE)</strong> to recompile (or <strong>↗ see on CE</strong> to inspect the harness).</div>`
@@ -1809,7 +1873,7 @@
         return (
             `<div class="ex-wrap">` + hint +
             `<div class="ex" style="grid-template-columns:${cols}">${toggle}${cells.join('')}</div>` +
-            runBtn + seeBtn + status + noRunNote +
+            runBtn + seeBtn + status + noRunNote + ceVerify +
             `</div>`
         );
     }
