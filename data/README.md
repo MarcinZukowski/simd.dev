@@ -9,6 +9,7 @@ architectures, built from upstream vendor and compiler sources.
 | ---------------- | ---------------------------------------------------------------------- |
 | `intrinsics.jsonl` | One JSON record per line. The database itself.                       |
 | `stats.json`     | Summary counts (by source, by arch, by SIMD family, by desc source).   |
+| `ce_verify.jsonl`  | Per-intrinsic Compiler Explorer round-trip status. Populated incrementally by `scripts/verify_ce.mjs`. |
 | `NOTICE`         | Required attributions for upstream sources (CC-BY-SA, Apache, Intel).  |
 
 Current size: ~7.7 MB (`wc -l intrinsics.jsonl` → 21,484 records).
@@ -125,6 +126,48 @@ The pipeline is four steps; `build_all.sh` runs them in order:
 
 Each step is idempotent. Caching: fetch scripts skip files already on
 disk; `build_db.py` always re-derives from cache.
+
+### Compiler Explorer verification (`ce_verify.jsonl`)
+
+`scripts/verify_ce.mjs` slowly crawls every viewable intrinsic, builds
+the same C++ harness the website's "see on CE" button generates, ships
+it to Compiler Explorer, and records the result. The output (one row
+per intrinsic, sorted by name) is what the site reads to render the
+✓/⚠ badge on the intrinsic page.
+
+Runs out of band — *not* part of `build_all.sh`. Hours, not seconds.
+
+```sh
+# typical: full sweep at the default 1 req/sec, resumable
+node scripts/verify_ce.mjs
+
+# subset for a quick check / debugging
+node scripts/verify_ce.mjs --names _mm_add_epi32,vaddq_s8
+node scripts/verify_ce.mjs --filter '^_mm256_mask_' --limit 20
+
+# faster (CE is OK with this on a small/medium sweep; back off if 429s)
+node scripts/verify_ce.mjs --rps 2
+
+# dry-run -- print harness sources without hitting CE
+node scripts/verify_ce.mjs --names _mm_add_epi32 --dry-run
+
+# ignore the green-status cache, re-test everything
+node scripts/verify_ce.mjs --force
+```
+
+After a run, sync to the site:
+
+```sh
+simd.dev/sync.sh           # copies data/ce_verify.jsonl -> simd.dev/dist/
+```
+
+Status values: `ok`, `compile_failed`, `run_failed`, `output_mismatch`,
+`output_unparseable`, `no_result_bytes`, `network_error`, `skipped:*`.
+The verifier shares the harness module (`simd.dev/harness.js`) with the
+browser, so a verifier green tick means the same C++ the user's "see on
+CE" button would post.
+
+Dependencies: a Node ≥18 (for global `fetch`). No npm packages.
 
 ### Maintenance gotcha
 
